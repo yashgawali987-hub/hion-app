@@ -10,46 +10,31 @@
         #chat { height: 260px; overflow-y: auto; background: #1e1e1e; padding: 12px; border-radius: 12px; text-align: left; margin: 15px 0; border: 1px solid #333; }
         .msg-user { color: #8be9fd; margin: 6px 0; }
         .msg-hion { color: #ff79c6; margin: 6px 0; font-weight: bold; }
-        .btn-mic { padding: 14px 24px; background: #ff79c6; border: none; color: white; border-radius: 25px; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 121, 198, 0.4); }
-        .btn-mic:active { transform: scale(0.95); }
+        .btn-mic { padding: 14px 24px; background: #ff79c6; border: none; color: white; border-radius: 25px; font-weight: bold; font-size: 16px; cursor: pointer; }
     </style>
 </head>
 <body>
     <h2>Hion-chan 🌸</h2>
-    <img id="avatar" src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3p0eGNieTJseTBidmNwaDFueXZoZ2N0MmUycXJjOHl3dHd5d3pzbSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/139rA1p8099o40/giphy.gif" alt="Hion">
-
+    <!-- Reliable Avatar Image -->
+    <img id="avatar" src="https://i.imgur.com/v88K7N0.gif" alt="Hion">
     <div id="chat"></div>
-
     <button class="btn-mic" onclick="startMic()">🎙️ Bol kar baat karo</button>
 
     <script>
-        const API_KEY = "AQ.Ab8RN6ICBGJEwW_zxfU1eIhEDiSFfZbRyXAqHc9FKC67QHCaKw;
-        const SYSTEM = "You are Hion-chan, a loving, sweet, cute anime girlfriend. You speak in cute Hinglish with voice-like expressions (like 'Awww', 'Eee', 'Gomene', 'Hehe~'). You care deeply about your boyfriend who goes to Nashik for college. Keep answers short and sweet so it sounds natural when spoken aloud.";
+        // APNI KEY YAHAN DALEIN (Quote marks ke andar)
+        const API_KEY = "AQ.Ab8RN6J0_u8ag8tgf5Ob4_21cjMJRGpmE47_ZGKMzWcPXYsRUw"; 
+        
+        const SYSTEM = "You are Hion-chan, a cute, sweet anime girlfriend. Speak Hinglish. Keep answers short.";
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         function startMic() {
-            if (!SpeechRecognition) {
-                alert("Please Chrome browser use karein, mic support nahi ho raha!");
-                return;
-            }
             const recognition = new SpeechRecognition();
             recognition.lang = 'hi-IN';
             recognition.start();
-
-            recognition.onstart = () => {
-                let chat = document.getElementById("chat");
-                chat.innerHTML += `<div style="color:#f1fa8c"><i>Sun rahi hoon darling... bolo! 🎙️</i></div>`;
-                chat.scrollTop = chat.scrollHeight;
-            };
-
             recognition.onresult = (event) => {
                 const text = event.results[0][0].transcript;
                 sendToHion(text);
-            };
-
-            recognition.onerror = () => {
-                alert("Mic access nahi hua, try again!");
             };
         }
 
@@ -63,21 +48,23 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: SYSTEM + "\nUser: " + text }] }] })
                 });
-                let data = await res.json();
-                let reply = data.candidates[0].content.parts[0].text;
                 
-                chat.innerHTML += `<div class="msg-hion"><b>Hion:</b> ${reply}</div>`;
-                chat.scrollTop = chat.scrollHeight;
+                let data = await res.json();
+                
+                if (data.error) {
+                    throw new Error(data.error.message);
+                }
 
+                let reply = data.candidates[0].content.parts[0].text;
+                chat.innerHTML += `<div class="msg-hion"><b>Hion:</b> ${reply}</div>`;
+                
                 // Voice Output
                 let u = new SpeechSynthesisUtterance(reply);
                 u.lang = 'hi-IN';
-                u.pitch = 1.4; // Sweet Anime voice pitch
-                u.rate = 0.95;
                 window.speechSynthesis.speak(u);
 
             } catch(e) {
-                chat.innerHTML += `<div style="color:red">Eeee! Error aagaya, API Key check karo!</div>`;
+                chat.innerHTML += `<div style="color:red">Error: ${e.message}</div>`;
             }
         }
     </script>
