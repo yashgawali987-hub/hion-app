@@ -3,89 +3,578 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Hion-chan 🌸</title>
+
     <style>
-        body { background: #121212; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
-        #avatar { width: 160px; height: 160px; border-radius: 50%; border: 3px solid #ff79c6; margin: 10px auto; display: block; object-fit: cover; }
-        #chat { height: 240px; overflow-y: auto; background: #1e1e1e; padding: 12px; border-radius: 12px; text-align: left; margin: 15px 0; border: 1px solid #333; }
-        .msg-user { color: #8be9fd; margin: 6px 0; }
-        .msg-hion { color: #ff79c6; margin: 6px 0; font-weight: bold; }
-        .btn-mic { padding: 14px 24px; background: #ff79c6; border: none; color: white; border-radius: 25px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; margin-top: 10px; }
-        input { width: 90%; padding: 10px; border-radius: 8px; border: 1px solid #ff79c6; background: #222; color: white; margin-bottom: 10px; text-align: center; }
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #121212;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h2 {
+            font-size: 30px;
+            margin-bottom: 15px;
+        }
+
+        #avatar {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            border: 3px solid #ff79c6;
+            margin: 10px auto 20px;
+            display: block;
+            object-fit: cover;
+        }
+
+        input {
+            width: 90%;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid #ff79c6;
+            background: #222;
+            color: white;
+            margin-bottom: 12px;
+            text-align: center;
+            font-size: 15px;
+            outline: none;
+        }
+
+        #chat {
+            height: 300px;
+            overflow-y: auto;
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 14px;
+            text-align: left;
+            margin: 15px 0;
+            border: 1px solid #333;
+        }
+
+        .msg-user {
+            color: #8be9fd;
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+
+        .msg-hion {
+            color: #ff79c6;
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+
+        .status {
+            color: #f1fa8c;
+            margin: 10px 0;
+            font-style: italic;
+        }
+
+        .error {
+            color: #ff5555;
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+
+        .btn-mic {
+            padding: 16px 24px;
+            background: #ff79c6;
+            border: none;
+            color: white;
+            border-radius: 28px;
+            font-weight: bold;
+            font-size: 17px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-mic:active {
+            transform: scale(0.98);
+        }
+
+        .btn-mic:disabled {
+            opacity: 0.6;
+        }
     </style>
 </head>
+
 <body>
+
     <h2>Hion-chan 🌸</h2>
-    <img id="avatar" src="https://i.postimg.co/D03vK3Lg/anime-girl.gif" alt="Hion">
-    
-    <!-- API Key Input Field -->
-    <input type="password" id="userApiKey" placeholder="Yahan Gemini API Key Paste Karo">
 
-    <div id="chat"></div>
+    <img
+        id="avatar"
+        src="https://i.postimg.co/D03vK3Lg/anime-girl.gif"
+        alt="Hion"
+    >
 
-    <button class="btn-mic" onclick="startMic()">🎙️ Bol kar baat karo</button>
+    <input
+        type="password"
+        id="userApiKey"
+        placeholder="Yahan Gemini API Key Paste Karo"
+    >
 
-    <script>
-        const SYSTEM = "You are Hion-chan, a cute, loving anime girlfriend. Speak in sweet Hinglish. Keep answers short.";
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    <div id="chat">
+        <div class="status">Hion ready hai 🌸</div>
+    </div>
 
-        function startMic() {
-            const key = document.getElementById("userApiKey").value.trim();
-            if (!key) {
-                alert("Pehle apni Gemini API Key box mein daalo!");
+    <button
+        class="btn-mic"
+        id="micButton"
+        onclick="startMic()"
+    >
+        🎙️ Bol kar baat karo
+    </button>
+
+
+<script>
+
+    /* =========================
+       HION SETTINGS
+    ========================== */
+
+    const SYSTEM = `
+You are Hion-chan, a friendly anime-style AI assistant.
+
+Speak naturally in simple Hinglish.
+Keep replies short and useful.
+Be friendly, cheerful and helpful.
+Do not pretend to be a real human.
+`;
+
+    const MODEL = "gemini-2.5-flash";
+
+    const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
+
+
+    /* =========================
+       CHAT UI
+    ========================== */
+
+    function addMessage(type, text) {
+
+        const chat = document.getElementById("chat");
+
+        const div = document.createElement("div");
+
+        if (type === "user") {
+            div.className = "msg-user";
+            div.innerHTML = "<b>You:</b> " + escapeHTML(text);
+        }
+
+        else if (type === "hion") {
+            div.className = "msg-hion";
+            div.innerHTML = "<b>Hion:</b> " + escapeHTML(text);
+        }
+
+        else if (type === "status") {
+            div.className = "status";
+            div.innerHTML = escapeHTML(text);
+        }
+
+        else if (type === "error") {
+            div.className = "error";
+            div.innerHTML = "<b>Error:</b> " + escapeHTML(text);
+        }
+
+        chat.appendChild(div);
+
+        chat.scrollTop = chat.scrollHeight;
+
+        return div;
+    }
+
+
+    function escapeHTML(text) {
+
+        return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+
+    /* =========================
+       MICROPHONE
+    ========================== */
+
+    function startMic() {
+
+        const key =
+            document.getElementById("userApiKey")
+            .value
+            .trim();
+
+        if (!key) {
+
+            alert(
+                "Pehle Gemini API Key box mein daalo!"
+            );
+
+            return;
+        }
+
+
+        if (!SpeechRecognition) {
+
+            alert(
+                "Is browser mein Speech Recognition supported nahi hai. Chrome use karo."
+            );
+
+            return;
+        }
+
+
+        const button =
+            document.getElementById("micButton");
+
+        button.disabled = true;
+
+        const recognition =
+            new SpeechRecognition();
+
+
+        recognition.lang = "hi-IN";
+
+        recognition.continuous = false;
+
+        recognition.interimResults = false;
+
+        recognition.maxAlternatives = 1;
+
+
+        addMessage(
+            "status",
+            "Listening... 🎙️"
+        );
+
+
+        recognition.onresult = function(event) {
+
+            const text =
+                event.results[0][0].transcript.trim();
+
+            if (!text) {
+
+                addMessage(
+                    "error",
+                    "Mujhe kuch sunai nahi diya."
+                );
+
+                button.disabled = false;
+
                 return;
             }
-            if (!SpeechRecognition) {
-                alert("Chrome browser use karein!");
-                return;
+
+
+            sendToHion(text, key);
+        };
+
+
+        recognition.onerror = function(event) {
+
+            console.log(
+                "Speech error:",
+                event.error
+            );
+
+
+            let message =
+                "Microphone error.";
+
+            if (event.error === "not-allowed") {
+
+                message =
+                    "Microphone permission allow karo.";
             }
 
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'hi-IN';
+            else if (event.error === "no-speech") {
+
+                message =
+                    "Kuch bola nahi gaya ya awaaz detect nahi hui.";
+            }
+
+            else if (event.error === "network") {
+
+                message =
+                    "Speech recognition ke liye internet connection check karo.";
+            }
+
+
+            addMessage(
+                "error",
+                message
+            );
+
+            button.disabled = false;
+        };
+
+
+        recognition.onend = function() {
+
+            button.disabled = false;
+        };
+
+
+        try {
+
             recognition.start();
 
-            recognition.onstart = () => {
-                let chat = document.getElementById("chat");
-                chat.innerHTML += `<div style="color:#f1fa8c"><i>Listening... 🎙️</i></div>`;
-                chat.scrollTop = chat.scrollHeight;
-            };
+        } catch (error) {
 
-            recognition.onresult = (event) => {
-                const text = event.results[0][0].transcript;
-                sendToHion(text, key);
-            };
+            console.log(error);
+
+            button.disabled = false;
         }
+    }
 
-        async function sendToHion(text, apiKey) {
-            let chat = document.getElementById("chat");
-            chat.innerHTML += `<div class="msg-user"><b>You:</b> ${text}</div>`;
 
-            try {
-                let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: SYSTEM + "\nUser: " + text }] }] })
-                });
+    /* =========================
+       GEMINI API
+    ========================== */
 
-                let data = await res.json();
+    async function sendToHion(text, apiKey) {
 
-                if (data.error) {
-                    throw new Error(data.error.message);
+        const button =
+            document.getElementById("micButton");
+
+        button.disabled = true;
+
+
+        addMessage(
+            "user",
+            text
+        );
+
+
+        const status =
+            addMessage(
+                "status",
+                "Hion soch rahi hai... 🤔"
+            );
+
+
+        try {
+
+            const url =
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                + MODEL
+                + ":generateContent?key="
+                + encodeURIComponent(apiKey);
+
+
+            const response =
+                await fetch(
+                    url,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+
+                            contents: [
+
+                                {
+                                    role: "user",
+
+                                    parts: [
+
+                                        {
+                                            text:
+                                                SYSTEM
+                                                + "\n\nUser: "
+                                                + text
+                                        }
+
+                                    ]
+                                }
+
+                            ],
+
+                            generationConfig: {
+
+                                temperature: 0.8,
+
+                                maxOutputTokens: 300
+
+                            }
+
+                        })
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            console.log(
+                "Gemini response:",
+                data
+            );
+
+
+            if (!response.ok) {
+
+                let errorMessage =
+                    "Gemini API request failed.";
+
+                if (
+                    data &&
+                    data.error &&
+                    data.error.message
+                ) {
+
+                    errorMessage =
+                        data.error.message;
                 }
 
-                let reply = data.candidates[0].content.parts[0].text;
-                chat.innerHTML += `<div class="msg-hion"><b>Hion:</b> ${reply}</div>`;
-                chat.scrollTop = chat.scrollHeight;
-
-                let u = new SpeechSynthesisUtterance(reply);
-                u.lang = 'hi-IN';
-                u.pitch = 1.3;
-                window.speechSynthesis.speak(u);
-
-            } catch(e) {
-                chat.innerHTML += `<div style="color:red">Error: ${e.message}</div>`;
+                throw new Error(
+                    errorMessage
+                );
             }
+
+
+            if (
+                !data.candidates ||
+                !data.candidates.length
+            ) {
+
+                throw new Error(
+                    "Gemini ne koi response nahi diya."
+                );
+            }
+
+
+            const candidate =
+                data.candidates[0];
+
+
+            if (
+                !candidate.content ||
+                !candidate.content.parts ||
+                !candidate.content.parts.length
+            ) {
+
+                throw new Error(
+                    "Gemini response ka format unexpected hai."
+                );
+            }
+
+
+            let reply = "";
+
+            for (
+                const part
+                of candidate.content.parts
+            ) {
+
+                if (part.text) {
+
+                    reply += part.text;
+                }
+            }
+
+
+            reply = reply.trim();
+
+
+            if (!reply) {
+
+                throw new Error(
+                    "Gemini ka reply empty hai."
+                );
+            }
+
+
+            status.remove();
+
+
+            addMessage(
+                "hion",
+                reply
+            );
+
+
+            speakReply(reply);
+
+
+        } catch (error) {
+
+            console.error(
+                "Hion API Error:",
+                error
+            );
+
+
+            status.remove();
+
+
+            addMessage(
+                "error",
+                error.message
+            );
+
+        } finally {
+
+            button.disabled = false;
         }
-    </script>
+    }
+
+
+    /* =========================
+       TEXT TO SPEECH
+    ========================== */
+
+    function speakReply(text) {
+
+        if (!("speechSynthesis" in window)) {
+
+            return;
+        }
+
+
+        window.speechSynthesis.cancel();
+
+
+        const utterance =
+            new SpeechSynthesisUtterance(
+                text
+            );
+
+
+        utterance.lang = "hi-IN";
+
+        utterance.rate = 0.95;
+
+        utterance.pitch = 1.2;
+
+        utterance.volume = 1;
+
+
+        window.speechSynthesis.speak(
+            utterance
+        );
+    }
+
+
+</script>
+
 </body>
 </html>
