@@ -39,8 +39,8 @@
             chat.scrollTop = chat.scrollHeight;
 
             try {
-                // Free Model: gemini-1.5-flash
-                let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                // सुधारी गई लाइन: यहाँ gemini-1.5-flash को अपडेटेड मॉडल लिंक से बदला गया है
+                let res = await fetch(`https://googleapis.com{apiKey}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ contents: [{ parts: [{ text: SYSTEM + "\nUser: " + text }] }] })
